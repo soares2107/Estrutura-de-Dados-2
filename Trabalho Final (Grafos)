@@ -1,0 +1,122 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <climits>
+using namespace std;
+
+// Estrutura que representa uma aresta no grafo
+struct Edge {
+    int node;    // Nó de destino
+    int weight;  // Peso da aresta
+};
+
+// Classe que representa um grafo
+class Graph {
+public:
+    int nodes;              // Número de nós no grafo
+    vector<vector<Edge>> adjacencyList;  // Lista de adjacência para representar o grafo
+
+    // Construtor que inicializa o grafo com o número de nós
+    Graph(int n) : nodes(n), adjacencyList(n) {}
+
+    // Método para adicionar uma aresta ao grafo
+    void addEdge(int u, int v, int w) {
+        adjacencyList[u].push_back({v, w});
+        adjacencyList[v].push_back({u, w});
+    }
+};
+
+// Classe que representa o jogo e utiliza o algoritmo de Dijkstra para encontrar caminhos mais curtos no grafo
+class Game {
+private:
+    Graph& cyberMaze;               // Referência ao grafo utilizado no jogo
+    vector<int> distances;          // Vetor para armazenar as distâncias mínimas de um nó inicial a todos os outros nós
+    vector<int> predecessors;       // Vetor para armazenar os predecessores dos nós no caminho mais curto
+    vector<bool> visited;           // Vetor para rastrear nós visitados durante o algoritmo
+public:
+    // Construtor que recebe uma referência ao grafo
+    Game(Graph &g) : cyberMaze(g), distances(g.nodes, INT_MAX), predecessors(g.nodes, -1), visited(g.nodes, false) {}
+
+    // Método principal para jogar, encontra o caminho mais curto e exibe informações
+    void play(int startNode, int endNode) {
+        dijkstra(startNode);
+        if (distances[endNode] != INT_MAX) {
+            cout << "Caminho mais curto encontrado! Distância: " << distances[endNode] << endl;
+            printShortestPath(startNode, endNode);
+        } else {
+            cout << "Não há caminho disponível." << endl;
+        }
+        printDistances();
+    }
+
+private:
+    // Algoritmo de Dijkstra para encontrar os caminhos mais curtos
+    void dijkstra(int startNode) {
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+        pq.push({0, startNode});
+        distances[startNode] = 0;
+        while (!pq.empty()) {
+            int currentDistance = pq.top().first;
+            int currentNode = pq.top().second;
+            pq.pop();
+            if (visited[currentNode]) {
+                continue; // nó já foi visitado, ignore
+            }
+            visited[currentNode] = true;
+            for (const Edge &neighbor : cyberMaze.adjacencyList[currentNode]) {
+                int newDistance = currentDistance + neighbor.weight;
+                if (newDistance < distances[neighbor.node]) {
+                    distances[neighbor.node] = newDistance;
+                    predecessors[neighbor.node] = currentNode; // Armazena o predecessor
+                    pq.push({newDistance, neighbor.node});
+                }
+            }
+        }
+    }
+
+    // Método para imprimir o caminho mais curto
+    void printShortestPath(int startNode, int endNode) {
+        cout << "Caminho mais curto: ";
+        int current = endNode;
+        vector<int> path;
+        while (current != -1) {
+            path.push_back(current);
+            current = predecessors[current];
+        }
+        reverse(path.begin(), path.end());  // Inverta o vetor para obter o caminho correto
+        for (int node : path) {
+            cout << node << " ";
+        }
+        cout << endl;
+    }
+
+    // Método para imprimir as distâncias mínimas de todos os nós
+    void printDistances() {
+        for (int i = 0; i < cyberMaze.nodes; ++i) {
+            cout << "Distancia ate o no " << i << ": " << distances[i] << endl;
+        }
+    }
+};
+
+// Função principal
+int main() {
+    // Exemplo de uso do grafo para representar o labirinto cibernético
+    Graph cyberMaze(10);
+    cyberMaze.addEdge(0, 1, 2);
+    cyberMaze.addEdge(1, 2, 1);
+    cyberMaze.addEdge(2, 3, 3);
+    cyberMaze.addEdge(3, 4, 2);
+    cyberMaze.addEdge(4, 5, 1);
+    cyberMaze.addEdge(5, 6, 2);
+    cyberMaze.addEdge(6, 7, 1);
+    cyberMaze.addEdge(7, 8, 2);
+    cyberMaze.addEdge(8, 9, 1);
+    cyberMaze.addEdge(0, 9, 3);
+
+    // Exemplo de uso do jogo
+    Game cyberGame(cyberMaze);  // Passa o grafo para o objeto Game
+    cyberGame.play(0, 9);
+
+    return 0;
+}
